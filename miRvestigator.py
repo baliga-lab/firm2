@@ -34,8 +34,8 @@ import os, pickle
 # addSorted(curList,newItem) - adds an entry into miRNAScores[pssm] so that the list is sorted in the end. Ties are possible and not handled at this level.
 # allKmers(length) - creates a list of all possible Kmers given a specific length and alphabet.
 # setMiRNAs(seedStart,seedEnd) - gets miRNAs from miRBase.org from the latest release.
-# getTopHit(pssm.getName()) - gets top hit for a PSSM.
-# getScoreList(pssm.getName()) - returns scores for all miRNA seeds for given PSSM, sorted of course.
+# getTopHit(pssm.name) - gets top hit for a PSSM.
+# getScoreList(pssm.name) - returns scores for all miRNA seeds for given PSSM, sorted of course.
 #
 class miRvestigator:
     # Initialize and start the run
@@ -115,16 +115,16 @@ class miRvestigator:
         # Building HMM Model
         outMe = []
         for pssm in pssms:
-            print('\n'+pssm.getName())
-            print('Building HMM model for '+str(pssm.getConsensusMotif())+'...')
-            miRNAScores[pssm.getName()] = ['NA','NA']
+            print('\n'+pssm.name)
+            print('Building HMM model for '+str(pssm.consensus_motif()) + '...')
+            miRNAScores[pssm.name] = ['NA','NA']
             # Then setup the HMM
             ## States ##
             ## and Starting Probabilities ##
             # NM1 = no match 1
             # NM2 = no match 2
             # PSSMi = PSSM at spot i
-            maxPSSMi = len(pssm.getMatrix())
+            maxPSSMi = len(pssm.matrix)
             states = ['NM1', 'NM2']
             sp = {'NM1': float(1)/float(maxPSSMi+1), 'NM2': 0}
             # Add the PSSM states
@@ -163,7 +163,7 @@ class miRvestigator:
                     if j == i+1:
                         if wobble==True:
                             # Allow wobbly matches if T is >= wobbleCut
-                            if float(pssm.getMatrix()[i+1][2])>=float(wobbleCut) or float(pssm.getMatrix()[i+1][3])>=float(wobbleCut):
+                            if float(pssm.matrix[i+1][2])>=float(wobbleCut) or float(pssm.matrix[i+1][3])>=float(wobbleCut):
                                 tp['PSSM'+str(i)]['PSSM'+str(j)] = 0.80
                                 tp['PSSM'+str(i)]['WOBBLE'+str(j)] = 0.19
                             # Otherwise don't allow wobbly matches
@@ -190,16 +190,16 @@ class miRvestigator:
             ep['NM2'] = { 'A': 0.25, 'C': 0.25, 'G': 0.25, 'T': 0.25 }
             # PSSMis
             for i in range(maxPSSMi):
-                ep['PSSM'+str(i)] = { 'A': pssm.getMatrix()[i][0], 'C': pssm.getMatrix()[i][1], 'G': pssm.getMatrix()[i][2], 'T': pssm.getMatrix()[i][3] }
+                ep['PSSM'+str(i)] = { 'A': pssm.matrix[i][0], 'C': pssm.matrix[i][1], 'G': pssm.matrix[i][2], 'T': pssm.matrix[i][3] }
                 if wobble==True:
                     # If motif has both G and U probability greater than wobblecut or random (0.25)
-                    if float(pssm.getMatrix()[i][2])>=float(wobbleCut) and float(pssm.getMatrix()[i][3])>=float(wobbleCut):
+                    if float(pssm.matrix[i][2])>=float(wobbleCut) and float(pssm.matrix[i][3])>=float(wobbleCut):
                         ep['WOBBLE'+str(i)] = { 'A': 0.5, 'C': 0.5, 'G': 0, 'T': 0 }
                     # If motif has G greater than wobblecut or random (0.25)
-                    elif float(pssm.getMatrix()[i][2])>=float(wobbleCut):
+                    elif float(pssm.matrix[i][2])>=float(wobbleCut):
                         ep['WOBBLE'+str(i)] = { 'A': 1, 'C': 0, 'G': 0, 'T': 0 }
                     # If motif has U greater than wobblecut or random (0.25)
-                    elif float(pssm.getMatrix()[i][3])>=float(wobbleCut):
+                    elif float(pssm.matrix[i][3])>=float(wobbleCut):
                         ep['WOBBLE'+str(i)] = { 'A': 0, 'C': 1, 'G': 0, 'T': 0 }
                     # Otherwise be random (0.25 x 4)
                     else:
@@ -212,7 +212,6 @@ class miRvestigator:
             maxVitP = 0
             testVitWiki = []
             for miRNA in self.miRNAs_6mer_1:
-                #forVit_8mer = self.forwardViterbi(list(self.miRNAs_8mer[miRNA]), states, sp, tp, ep)
                 forVit_8mer = self.viterbi(list(self.miRNAs_8mer[miRNA]), states, sp, tp, ep)
                 forVit_8mer = [0,0,forVit_8mer[0]]
                 if float(forVit_8mer[2]) > float(maxVitP):
@@ -225,7 +224,6 @@ class miRvestigator:
             vitPs_8mer = []
             hits_8mer = 0
             for kMer in self.permKMers_8mer:
-                #permVit = self.forwardViterbi(list(kMer), states, sp, tp, ep)
                 permVit = self.viterbi(list(kMer), states, sp, tp, ep)
                 permVit = [0,0,permVit[0]]
                 if float(permVit[2]) > float(maxVitP):
@@ -239,15 +237,13 @@ class miRvestigator:
                 vitPs_8mer.append(permVit[2])
             if hits_8mer<=1:
                 print('8mer match!')
-                #outFile.write('\n' + pssm.getName()+','+'_'.join(vitMirnas)+',8mer')
-                outMe.append(pssm.getName()+','+'_'.join(vitMirnas)+',8mer')
+                outMe.append(pssm.name+','+'_'.join(vitMirnas)+',8mer')
 
             if hits_8mer>1:
                 # Then try for perfect 7mer-m8
                 vitMirnas = []
                 maxVitP = 0
                 for miRNA in self.miRNAs_6mer_1:
-                    #forVit_7mer_m8 = self.forwardViterbi(list(self.miRNAs_7mer_m8[miRNA]), states, sp, tp, ep)
                     forVit_7mer_m8 = self.viterbi(list(self.miRNAs_7mer_m8[miRNA]), states, sp, tp, ep)
                     forVit_7mer_m8 = [0,0,forVit_7mer_m8[0]]
                     if float(forVit_7mer_m8[2]) > float(maxVitP):
@@ -260,7 +256,6 @@ class miRvestigator:
                 vitPs_7mer = []
                 hits_7mer_m8 = 0
                 for kMer in self.permKMers_7mer:
-                    #permVit = self.forwardViterbi(list(kMer), states, sp, tp, ep)
                     permVit = self.viterbi(list(kMer), states, sp, tp, ep)
                     permVit = [0,0,permVit[0]]
                     if float(permVit[2]) > float(maxVitP):
@@ -274,8 +269,7 @@ class miRvestigator:
                     vitPs_7mer.append(permVit[2])
                 if hits_7mer_m8<=1:
                     print('7mer-m8 match!')
-                    #outFile.write('\n'+pssm.getName()+','+'_'.join(vitMirnas)+',7mer_m8')
-                    outMe.append(pssm.getName()+','+'_'.join(vitMirnas)+',7mer_m8')
+                    outMe.append(pssm.name + ','+'_'.join(vitMirnas)+',7mer_m8')
 
                 # Finally try for perfect 7mer-a1
                 vitMirnas = []
@@ -308,11 +302,10 @@ class miRvestigator:
                     vitPs_7mer.append(permVit[2])
                 if hits_7mer_a1<=1:
                     print('7mer-a1 match!')
-                    #outFile.write('\n'+pssm.getName()+','+'_'.join(vitMirnas)+',7mer_a1')
-                    outMe.append(pssm.getName()+','+'_'.join(vitMirnas)+',7mer_a1')
+                    outMe.append(pssm.name+','+'_'.join(vitMirnas)+',7mer_a1')
             if hits_8mer>1 and hits_7mer_m8>1 and hits_7mer_a1>1:
                 print('No match!')
-                outMe.append(pssm.getName()+',NA,NA')
+                outMe.append(pssm.name+',NA,NA')
 
         print('miRvestigator analysis completed.')
         outFile = open(dirName+'/scores'+str(outName)+'.csv','w')
