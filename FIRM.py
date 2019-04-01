@@ -339,7 +339,7 @@ def run_mirvestigator(fastaFiles):
     # Compare to miRDB using my program
     final_pssms = [pssm for pssms in pssms_list for pssm in pssms]
     return [{'name': p.name,
-             'nsites': p.sites,
+             'sites': p.sites,
              'evalue': p.evalue,
              'genes': p.genes,
              'matrix': p.matrix}
