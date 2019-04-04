@@ -514,7 +514,6 @@ def write_combined_report(mirv_score_path):
         inFile.readline() # get rid of header
         lines = [i.strip().split(',') for i in inFile.readlines()]
 
-    pita_miRNA_matches = {}
     for line in lines:
         if not line[2]=='':
             miRNA_mature_seq_ids = []
@@ -536,7 +535,6 @@ def write_combined_report(mirv_score_path):
         inFile.readline() # get rid of header
         lines = [i.strip().split(',') for i in inFile.readlines()]
 
-    targetScan_miRNA_matches = {}
     for line in lines:
         if not line[2]=='':
             miRNA_mature_seq_ids = []
