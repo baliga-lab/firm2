@@ -8,23 +8,20 @@ from miRvestigator import miRvestigator
 import json
 
 
-def miRNAInDict(miRNA, mirna_ids):
-    result = []
-    for i in mirna_ids.keys():
-        if compareMiRNANames(miRNA, i):
-            result.append(mirna_ids[i])
-    return result
+def mirnas_for(mirna, mirna_ids):
+    return [mirnas for m_name, mirnas in mirna_ids.items()
+            if mirna_name_matches(mirna, m_name)]
 
 
-def compareMiRNANames(a, b):
-    if a==b:
+def mirna_name_matches(a, b):
+    if a == b:
         return 1
     if len(a) < len(b):
-        re1 = re.compile(a+'[a-z]$')
+        re1 = re.compile(a + '[a-z]$')
         if re1.match(b):
             return 1
     else:
-        re1 = re.compile(b+'[a-z]$')
+        re1 = re.compile(b + '[a-z]$')
         if re1.match(a):
             return 1
     return 0
@@ -220,7 +217,8 @@ def benjaminiHochberg(dict1, tests, alpha=0.001):
 
 
 def make_mirna_dicts(mirna_path):
-    # 0. Create a dictionary to convert the miRNAs to there respective ids
+    """reads the mature.fa.gz and returns a mapping from
+    miRNA names => miRNA ids"""
     mirna_ids = {}
     with open(mirna_path, 'r') as inFile:
         while 1:
@@ -228,10 +226,12 @@ def make_mirna_dicts(mirna_path):
             if not inLine:
                 break
             splitUp = inLine.split(' ')
-            if not splitUp[0].lower() in mirna_ids:
-                mirna_ids[splitUp[0].lower()] = splitUp[1]
+            mirna_name = splitUp[0].lower()
+            mirna_id = splitUp[1]
+            if not mirna_name in mirna_ids:
+                mirna_ids[mirna_name] = mirna_id
             else:
-                print('Uh oh! %s' % splitUp)
+                raise Exception("already exists: '%s'" % mirna_name)
 
     return mirna_ids
 
@@ -498,7 +498,7 @@ def write_combined_report(mirv_score_path, mirna_ids):
             if not line[1]=='NA':
                 miRNA_mature_seq_ids = []
                 for i in line[1].split('_'):
-                    miRNA_mature_seq_ids += miRNAInDict(i.lower(), mirna_ids)
+                    miRNA_mature_seq_ids += mirnas_for(i.lower(), mirna_ids)
                 cluster_name = [i for i in line[0].split('_')]
                 cluster_name = cluster_name[1]+'_'+cluster_name[2]+'_'+cluster_name[3]+'_'+cluster_name[0]
                 miRNA_matches[cluster_name] = {'miRNA':line[1],'model':line[2],'mature_seq_ids':miRNA_mature_seq_ids}
@@ -516,7 +516,7 @@ def write_combined_report(mirv_score_path, mirna_ids):
             miRNA_mature_seq_ids = []
             mirs = [i.lower().strip('pita_') for i in line[2].split(' ')]
             for i in mirs:
-                miRNA_mature_seq_ids += miRNAInDict(i, mirna_ids)
+                miRNA_mature_seq_ids += mirnas_for(i, mirna_ids)
             if not line[0]+'_'+line[1] in miRNA_matches:
                 miRNA_matches[line[0]+'_'+line[1]] = {'pita_miRNA':' '.join(mirs),'pita_perc_targets':str(float(line[3])/float(line[6])),'pita_pValue':line[7],'pita_mature_seq_ids':miRNA_mature_seq_ids}
             else:
@@ -537,7 +537,7 @@ def write_combined_report(mirv_score_path, mirna_ids):
             miRNA_mature_seq_ids = []
             mirs = [i.lower().strip('scan_') for i in line[2].split(' ')]
             for i in mirs:
-                miRNA_mature_seq_ids += miRNAInDict(i.lower().strip('targetscan_'), mirna_ids)
+                miRNA_mature_seq_ids += mirnas_for(i.lower().strip('targetscan_'), mirna_ids)
             if not line[0]+'_'+line[1] in miRNA_matches:
                 miRNA_matches[line[0]+'_'+line[1]] = {'ts_miRNA':' '.join(mirs),'ts_perc_targets':str(float(line[3])/float(line[6])),'ts_pValue':line[7],'ts_mature_seq_ids':miRNA_mature_seq_ids}
             else:
