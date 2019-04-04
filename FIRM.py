@@ -8,12 +8,12 @@ from miRvestigator import miRvestigator
 import json
 
 
-def miRNAInDict(miRNA, dict1):
-    retMe = []
-    for i in dict1.keys():
+def miRNAInDict(miRNA, mirna_ids):
+    result = []
+    for i in mirna_ids.keys():
         if compareMiRNANames(miRNA, i):
-            retMe.append(miRNAIDs[i])
-    return retMe
+            result.append(mirna_ids[i])
+    return result
 
 
 def compareMiRNANames(a, b):
@@ -221,22 +221,19 @@ def benjaminiHochberg(dict1, tests, alpha=0.001):
 
 def make_mirna_dicts(mirna_path):
     # 0. Create a dictionary to convert the miRNAs to there respective ids
-    miRNAIDs = {}
-    miRNAIDs_rev = {}
+    mirna_ids = {}
     with open(mirna_path, 'r') as inFile:
         while 1:
             inLine = inFile.readline()
             if not inLine:
                 break
             splitUp = inLine.split(' ')
-            if not splitUp[1] in miRNAIDs_rev:
-                miRNAIDs_rev[splitUp[1]] = splitUp[0].lower()
-            if not splitUp[0].lower() in miRNAIDs:
-                miRNAIDs[splitUp[0].lower()] = splitUp[1]
+            if not splitUp[0].lower() in mirna_ids:
+                mirna_ids[splitUp[0].lower()] = splitUp[1]
             else:
                 print('Uh oh! %s' % splitUp)
 
-    return miRNAIDs, miRNAIDs_rev
+    return mirna_ids
 
 
 def make_refseq2entrez(gene2refseq_path):
@@ -490,7 +487,7 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
                 outFile.write('\n'+filtered[clust]['dataset']+','+filtered[clust]['cluster']+','+miRNA+','+str(float(enrichment[clust]['q'])/float(enrichment[clust]['k'])))
 
 
-def write_combined_report(mirv_score_path):
+def write_combined_report(mirv_score_path, mirna_ids):
     # Get miRvestigator results
     print("Retrieving miRvestigator results...", file=sys.stderr, end="", flush=True)
     miRNA_matches = {}
@@ -501,7 +498,7 @@ def write_combined_report(mirv_score_path):
             if not line[1]=='NA':
                 miRNA_mature_seq_ids = []
                 for i in line[1].split('_'):
-                    miRNA_mature_seq_ids += miRNAInDict(i.lower(),miRNAIDs)
+                    miRNA_mature_seq_ids += miRNAInDict(i.lower(), mirna_ids)
                 cluster_name = [i for i in line[0].split('_')]
                 cluster_name = cluster_name[1]+'_'+cluster_name[2]+'_'+cluster_name[3]+'_'+cluster_name[0]
                 miRNA_matches[cluster_name] = {'miRNA':line[1],'model':line[2],'mature_seq_ids':miRNA_mature_seq_ids}
@@ -519,7 +516,7 @@ def write_combined_report(mirv_score_path):
             miRNA_mature_seq_ids = []
             mirs = [i.lower().strip('pita_') for i in line[2].split(' ')]
             for i in mirs:
-                miRNA_mature_seq_ids += miRNAInDict(i,miRNAIDs)
+                miRNA_mature_seq_ids += miRNAInDict(i, mirna_ids)
             if not line[0]+'_'+line[1] in miRNA_matches:
                 miRNA_matches[line[0]+'_'+line[1]] = {'pita_miRNA':' '.join(mirs),'pita_perc_targets':str(float(line[3])/float(line[6])),'pita_pValue':line[7],'pita_mature_seq_ids':miRNA_mature_seq_ids}
             else:
@@ -540,7 +537,7 @@ def write_combined_report(mirv_score_path):
             miRNA_mature_seq_ids = []
             mirs = [i.lower().strip('scan_') for i in line[2].split(' ')]
             for i in mirs:
-                miRNA_mature_seq_ids += miRNAInDict(i.lower().strip('targetscan_'),miRNAIDs)
+                miRNA_mature_seq_ids += miRNAInDict(i.lower().strip('targetscan_'), mirna_ids)
             if not line[0]+'_'+line[1] in miRNA_matches:
                 miRNA_matches[line[0]+'_'+line[1]] = {'ts_miRNA':' '.join(mirs),'ts_perc_targets':str(float(line[3])/float(line[6])),'ts_pValue':line[7],'ts_mature_seq_ids':miRNA_mature_seq_ids}
             else:
@@ -582,7 +579,7 @@ if __name__ == '__main__':
 
     use_entrez = args.use_entrez
     # used in combined report !!! make sure to pass them there
-    miRNAIDs, miRNAIDS_rev = make_mirna_dicts('common/hsa.mature.fa')
+    mirna_ids = make_mirna_dicts('common/hsa.mature.fa')
 
     refSeq2entrez = make_refseq2entrez('common/gene2refseq.gz')
 
@@ -607,4 +604,4 @@ if __name__ == '__main__':
 
     run_target_prediction_dbs(refSeq2entrez, use_entrez)
     # TODO: paths for merged PITA/TargetScan results
-    write_combined_report('mirv_scores.csv')
+    write_combined_report('mirv_scores.csv', mirna_ids)
