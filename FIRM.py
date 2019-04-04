@@ -174,40 +174,14 @@ def cluster_hypergeo(params):
         outfile.write('\n'.join(writeMe))
 
 
-# Sort two lists based on one of the lists
-def qsort_based_on(sortMe, basedOn):
-    if not len(sortMe) == len(basedOn):
-        return 'ERROR!'
-    if len(basedOn) <= 1:
-            return [sortMe, basedOn]
-    pivot = basedOn.pop(0)
-    pivotSM = sortMe.pop(0)
-    greater = []
-    lesser = []
-    greaterSM = []
-    lesserSM = []
-    while len(basedOn) > 0:
-        cur = basedOn.pop(0)
-        curSM = sortMe.pop(0)
-        if cur >= pivot:
-            greater.append(cur)
-            greaterSM.append(curSM)
-        else:
-            lesser.append(cur)
-            lesserSM.append(curSM)
-    greaterOut = qsort_based_on(greaterSM, greater)
-    lesserOut = qsort_based_on(lesserSM, lesser)
-    return [lesserOut[0] + [pivotSM] + greaterOut[0], lesserOut[1] + [pivot] + greaterOut[1]]
-
-
 # Benjamini-Hochberg - takes a dictionary of { name: pValue, ... }
 def benjamini_hochberg(dict1, tests, alpha=0.001):
-    # First sort the results
-    sorted1 = qsort_based_on(list(dict1.keys()), list(dict1.values()))[0]
-    # Then control based on FDR
+    # create a list of names sorted by the p-values in the input dictionary
+    sorted1 = [i[0] for i in sorted(list(dict1.items()), key=lambda t: t[1])]
+
+    # Then control based on FDR (false discovery rate)
     res1 = []
     alpha = float(alpha)
-    #res1 = [sorted1[i] for i in range(len(sorted1)) if dict1[sorted1[i]] <= alpha/float(tests-i)]
     for i in range(len(sorted1)):
         if dict1[sorted1[i]] <= alpha*(float(i+1)/float(tests)):
             res1.append(sorted1[i])
