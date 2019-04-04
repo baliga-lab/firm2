@@ -2,7 +2,7 @@ import argparse
 from pssm import pssm
 import gzip, os, re
 from subprocess import *
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool, cpu_count, Manager
 from collections import defaultdict
 from miRvestigator import miRvestigator
 import json
@@ -357,6 +357,7 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
                               pred_db_dir='TargetPredictionDatabases'):
     global db, dataset, datasetGenes, totalTargets, clusters, miRNATargetDict
 
+    mgr = Manager()
     dbs = [d for d in os.listdir(pred_db_dir)
            if os.path.isdir(os.path.join(pred_db_dir, d))]
     # Now do PITA and TargetScan - iterate through both platforms
@@ -494,10 +495,10 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
                 outFile.write('\n'+filtered[clust]['dataset']+','+filtered[clust]['cluster']+','+miRNA+','+str(float(enrichment[clust]['q'])/float(enrichment[clust]['k'])))
 
 
-def write_combined_report():
+def write_combined_report(mirv_score_path):
     # Get miRvestigator results
     miRNA_matches = {}
-    with open(os.path.join('miRNA', 'scores.csv'),'r') as inFile:
+    with open(mirv_score_path,'r') as inFile:
         inFile.readline() # get rid of header
         lines = [i.strip().split(',') for i in inFile.readlines()]
         for line in lines:
@@ -583,8 +584,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     use_entrez = args.use_entrez
+    # used in combined report !!! make sure to pass them there
     miRNAIDs, miRNAIDS_rev = make_mirna_dicts('common/hsa.mature.fa')
+
     refSeq2entrez = make_refseq2entrez('common/gene2refseq.gz')
+
+    """
     seqs = read_sequences('common/p3utrSeqs_Homo_sapiens.csv.gz')
 
     # First stage: run Weeder on the input clusters and write out the
@@ -600,8 +605,9 @@ if __name__ == '__main__':
         for seq in seqs.values():
             outfile.write("%s\n" % seq)
 
-    # TODO: run our actual weeder as external tool
+    # TODO: run our actual miRvestigator as external tool
     """
+
     run_target_prediction_dbs(refSeq2entrez, use_entrez)
-    write_combined_report()
-    """
+    # TODO: paths for merged PITA/TargetScan results
+    write_combined_report('mirv_scores.csv')
