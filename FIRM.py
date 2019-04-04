@@ -175,7 +175,7 @@ def cluster_hypergeo(params):
 
 
 # Sort two lists based on one of the lists
-def qsortBasedOn(sortMe, basedOn):
+def qsort_based_on(sortMe, basedOn):
     if not len(sortMe) == len(basedOn):
         return 'ERROR!'
     if len(basedOn) <= 1:
@@ -195,15 +195,15 @@ def qsortBasedOn(sortMe, basedOn):
         else:
             lesser.append(cur)
             lesserSM.append(curSM)
-    greaterOut = qsortBasedOn(greaterSM, greater)
-    lesserOut = qsortBasedOn(lesserSM, lesser)
+    greaterOut = qsort_based_on(greaterSM, greater)
+    lesserOut = qsort_based_on(lesserSM, lesser)
     return [lesserOut[0] + [pivotSM] + greaterOut[0], lesserOut[1] + [pivot] + greaterOut[1]]
 
 
 # Benjamini-Hochberg - takes a dictionary of { name: pValue, ... }
-def benjaminiHochberg(dict1, tests, alpha=0.001):
+def benjamini_hochberg(dict1, tests, alpha=0.001):
     # First sort the results
-    sorted1 = qsortBasedOn(list(dict1.keys()), list(dict1.values()))[0]
+    sorted1 = qsort_based_on(list(dict1.keys()), list(dict1.values()))[0]
     # Then control based on FDR
     res1 = []
     alpha = float(alpha)
@@ -471,7 +471,7 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
         bhDict = {}
         for clust in range(len(enrichment)):
             bhDict[enrichment[clust]['dataset']+'_'+enrichment[clust]['cluster']] = enrichment[clust]['pValue']
-        significant = benjaminiHochberg(bhDict, tests=len(clusters), alpha=0.001)
+        significant = benjamini_hochberg(bhDict, tests=len(clusters), alpha=0.001)
         # Do filtering
         filtered = []
         for clust in range(len(enrichment)):
