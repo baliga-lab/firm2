@@ -323,7 +323,7 @@ total_targets = None
 mirna_target_dict = None
 
 def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir,
-                              mirna_outdir, pred_db_dir):
+                              outdir, pred_db_dir):
     global db, dataset, dataset_genes, total_targets, mirna_target_dict
 
     mgr = Manager()
@@ -395,7 +395,7 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir,
         overlapFiles = os.listdir('miRNA_' + db)
 
         # 2. Read them all in and grab the top hits
-        with open(os.path.join(mirna_outdir, 'mergedResults_%s.csv' % db), 'w') as outFile:
+        with open(os.path.join(outdir, 'mergedResults_%s.csv' % db), 'w') as outFile:
             outFile.write('Dataset,Cluster,miRNA,q,m,n,k,p.value')
             enrichment = []
             for overlapFile in overlapFiles:
@@ -454,14 +454,15 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir,
                 filtered.append(enrichment[clust])
 
         # Write out filtered results
-        with open('filtered_' + db + '.csv','w') as outFile:
+        fpath = os.path.join(outdir, 'filtered_%s.csv' % db)
+        with open(fpath, 'w') as outFile:
             outFile.write('Dataset,Signature,miRNA,Percent.Targets')
             tot = 0
             for clust in range(len(filtered)):
                 outFile.write('\n'+filtered[clust]['dataset']+','+filtered[clust]['cluster']+','+miRNA+','+str(float(enrichment[clust]['q'])/float(enrichment[clust]['k'])))
 
 
-def write_combined_report(mirv_score_path, mirna_ids, mirna_outdir):
+def write_combined_report(mirv_score_path, mirna_ids, outdir):
     # Get miRvestigator results
     print("Retrieving miRvestigator results...", file=sys.stderr, end="", flush=True)
     miRNA_matches = {}
@@ -481,7 +482,7 @@ def write_combined_report(mirv_score_path, mirna_ids, mirna_outdir):
 
     # Get PITA results
     print("Retrieving PITA results...", file=sys.stderr, end="", flush=True)
-    with open(os.path.join(mirna_outdir, 'mergedResults_PITA.csv'), 'r') as inFile:
+    with open(os.path.join(outdir, 'mergedResults_PITA.csv'), 'r') as inFile:
         inFile.readline() # get rid of header
         lines = [i.strip().split(',') for i in inFile.readlines()]
 
@@ -502,7 +503,7 @@ def write_combined_report(mirv_score_path, mirna_ids, mirna_outdir):
 
     # Get TargetScan results
     print("Retrieving Targetscan results...", file=sys.stderr, end="", flush=True)
-    with open(os.path.join(mirna_outdir, 'mergedResults_TargetScan.csv'),'r') as inFile:
+    with open(os.path.join(outdir, 'mergedResults_TargetScan.csv'),'r') as inFile:
         inFile.readline() # get rid of header
         lines = [i.strip().split(',') for i in inFile.readlines()]
 
@@ -522,7 +523,7 @@ def write_combined_report(mirv_score_path, mirna_ids, mirna_outdir):
     print('Done.', file=sys.stderr)
 
     # Big list of all miRNAs for all clusters
-    with open('combinedResults.csv','w') as outFile:
+    with open(os.path.join(outdir, 'combinedResults.csv'), 'w') as outFile:
         outFile.write('Dataset,signature,miRvestigator.miRNA,miRvestigator.model,miRvestigator.mature_seq_ids,PITA.miRNA,PITA.percent_targets,PITA.P_Value,PITA.mature_seq_ids,TargetScan.miRNA,TargetScan.percent_targets,TargetScan.P_Value,TargetScan.mature_seq_ids')
         for i in miRNA_matches:
             splitUp = i.split('_')
@@ -549,6 +550,7 @@ if __name__ == '__main__':
                                      description=DESCRIPTION)
     parser.add_argument('-ue', '--use_entrez', action='store_true',
                         help="input file uses entrez IDs instead of RefSeq")
+    parser.add_argument('outdir', help='output directory')
     args = parser.parse_args()
 
     use_entrez = args.use_entrez
@@ -572,11 +574,15 @@ if __name__ == '__main__':
 
     # TODO: run our actual miRvestigator as external tool
     """
+    if not os.path.exists(args.outdir):
+        os.makedirs(args.outdir)
 
-    run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
-                              mirna_outdir='miRNA', pred_db_dir='TargetPredictionDatabases')
+    run_target_prediction_dbs(refSeq2entrez, use_entrez,
+                              exp_dir='exp',
+                              outdir=args.outdir,
+                              pred_db_dir='TargetPredictionDatabases')
 
     # used in combined report !!! make sure to pass them there
     mirna_ids = make_mirna_dicts('common/hsa.mature.fa')
     # TODO: paths for merged PITA/TargetScan results
-    write_combined_report('mirv_scores.csv', mirna_ids, mirna_outdir='miRNA')
+    write_combined_report('mirv_scores.csv', mirna_ids, outdir=args.outdir)
