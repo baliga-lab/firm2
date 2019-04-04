@@ -1,6 +1,6 @@
 import argparse
 from pssm import pssm
-import gzip, os, re
+import gzip, os, re, sys
 from subprocess import *
 from multiprocessing import Pool, cpu_count, Manager
 from collections import defaultdict
@@ -146,18 +146,19 @@ def phyper(q, m, n, k):
             for line in out[0].decode("utf-8").strip().split('\n') if line]
 
 
-def clusterHypergeo(cluster):
-    global db, dataset, datasetGenes, totalTargets, clusters, miRNATargetDict
-
-    print('Cluster %d' % cluster)
+def cluster_hypergeo(params):
+    global db, dataset, dataset_genes, total_targets, mirna_target_dict
+    cluster, cluster_genes = params
+    sys.stderr.write(".")
+    sys.stderr.flush()
     outFile = open('miRNA_'+db+'/'+str(dataset[0])+'_'+str(cluster)+'.csv','w')
     outFile.write('miRNA,Cluster.Targets,miRNA.Targets,Cluster.Genes,Total,P.Value\n')
     # k = overlap, N = potential target genes, n = miRNA targets, m = cluster genes
     # Take gene list and compute overlap with each miRNA
-    allGenes = set(datasetGenes).intersection(set(totalTargets))
-    genes = set(clusters[cluster]).intersection(set(allGenes))
+    allGenes = set(dataset_genes).intersection(set(total_targets))
+    genes = set(cluster_genes).intersection(set(allGenes))
     writeMe = []
-    keys1 = miRNATargetDict.keys()
+    keys1 = mirna_target_dict.keys()
     m1s = []
     q = []
     m = []
@@ -165,7 +166,7 @@ def clusterHypergeo(cluster):
     k = []
     for m1 in keys1:
         m1s.append(m1)
-        miRNAGenes = set(miRNATargetDict[m1]).intersection(allGenes)
+        miRNAGenes = set(mirna_target_dict[m1]).intersection(allGenes)
         q.append(len(set(miRNAGenes).intersection(genes)))
         m.append(len(miRNAGenes))
         n.append(len(allGenes) - len(miRNAGenes))
@@ -241,7 +242,6 @@ def make_mirna_dicts(mirna_path):
 def make_refseq2entrez(gene2refseq_path):
     # Read in gene2refseq mappings and make a dictionary
     with gzip.open(gene2refseq_path, 'r') as inFile:
-        #inFile.readline() # skip header
         refSeq2entrez = {}
         while 1:
             line = inFile.readline()
@@ -259,7 +259,6 @@ def make_refseq2entrez(gene2refseq_path):
                     if not tmp in refSeq2entrez:
                         refSeq2entrez[tmp] = int(splitUp[1])
 
-        print('length refseq2entrez = %d' % len(refSeq2entrez))
         return refSeq2entrez
 
 
@@ -348,20 +347,20 @@ def run_mirvestigator(fastaFiles):
 
 db = None
 dataset = None
-datasetGenes = None
-totalTargets = None
-clusters = None
-miRNATargetDict = None
+dataset_genes = None
+total_targets = None
+mirna_target_dict = None
 
 def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
                               pred_db_dir='TargetPredictionDatabases'):
-    global db, dataset, datasetGenes, totalTargets, clusters, miRNATargetDict
+    global db, dataset, dataset_genes, total_targets, mirna_target_dict
 
     mgr = Manager()
     dbs = [d for d in os.listdir(pred_db_dir)
            if os.path.isdir(os.path.join(pred_db_dir, d))]
     # Now do PITA and TargetScan - iterate through both platforms
     for db in dbs:
+        print("checking against prediction database: '%s'" % db, file=sys.stderr)
         # Get ready for multiprocessor goodness
         cpus = cpu_count()
 
@@ -370,20 +369,19 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
                if x.endswith('.csv')]
 
         # Load the predicted target genes for each miRNA from the files
-        tmpDict = {}
+        tmp_dict = {}
         for f in ls2:
             miRNA = f.rstrip('.csv')
             with open(os.path.join(pred_db_dir, db, f), 'r') as inFile:
-                tmpDict[miRNA.lower()] = [int(line.strip()) for line in inFile.readlines()
+                tmp_dict[miRNA.lower()] = [int(line.strip()) for line in inFile.readlines()
                                           if line.strip()]
-        miRNATargetDict = mgr.dict(tmpDict)
+        mirna_target_dict = mgr.dict(tmp_dict)
 
         # Total background
-        print('\n2')
         with open(os.path.join(pred_db_dir, db, db + '_ids_entrez.bkg'), 'r') as inFile:
-            targetList = [int(x) for x in inFile.readlines() if x]
-            tmp1 = targetList
-            totalTargets = mgr.list(tmp1)
+            target_list = [int(x) for x in inFile.readlines() if x]
+            tmp1 = target_list
+            total_targets = mgr.list(tmp1)
 
         # For each cluster file in expfiles from Goodarzi et al.
         files = os.listdir(exp_dir)
@@ -391,10 +389,10 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
             # 3. Read in cluster file and convert to entrez ids
             with open(os.path.join(exp_dir, file), 'r') as inFile:
                 dataset = mgr.list([file.strip().split('.')[0]])
-                print(dataset[0])
+                print("Data set: '%s'..." % dataset[0], file=sys.stderr)
                 inFile.readline()
                 lines = inFile.readlines()
-                tmpDict = defaultdict(list)
+                clusters = defaultdict(list)
                 genes = []
                 for line in lines:
                     gene, group = line.strip().split('\t')
@@ -407,23 +405,20 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
                         else:
                             entrez = None
 
-                    if entrez in targetList:
+                    if entrez in target_list:
                         genes.append(entrez)
-                        tmpDict[group].append(entrez)
+                        clusters[group].append(entrez)
 
-            clusters = mgr.dict(tmpDict)
-            datasetGenes = mgr.list(genes)
+            dataset_genes = mgr.list(genes)
 
             # Iterate through clusters and compute p-value for each miRNA
             if not os.path.exists('miRNA_' + db):
                 os.mkdir('miRNA_' + db)
 
             # Run this using all cores available
-            print('Starting '+ dataset[0] + ' runs...')
-            keys2 = clusters.keys()
             pool = Pool(processes=cpus)
-            pool.map(clusterHypergeo, keys2)
-            print('Done.')
+            pool.map(cluster_hypergeo, list(clusters.items()))
+            print('Done.', file=sys.stderr)
 
         # 1. Get a list of all files in miRNA directory
         overlapFiles = os.listdir('miRNA_' + db)
@@ -433,16 +428,16 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
             outFile.write('Dataset,Cluster,miRNA,q,m,n,k,p.value')
             enrichment = []
             for overlapFile in overlapFiles:
-                inFile = open('miRNA_' + db + '/' + overlapFile, 'r')
-                inFile.readline() # Get rid of header
-                lines = [line.strip().split(',') for line in inFile.readlines()]
-                miRNAs = [line[0].lstrip(db+'_') for line in lines]
-                intSect = [line[1] for line in lines]
-                miRNAPred = [line[2] for line in lines]
-                allNum = [line[3] for line in lines]
-                clustGenes = [line[4] for line in lines]
-                pVals = [float(line[5]) for line in lines]
-                inFile.close()
+                with open('miRNA_' + db + '/' + overlapFile, 'r') as inFile:
+                    inFile.readline() # Get rid of header
+                    lines = [line.strip().split(',') for line in inFile.readlines()]
+                    miRNAs = [line[0].lstrip(db+'_') for line in lines]
+                    intSect = [line[1] for line in lines]
+                    miRNAPred = [line[2] for line in lines]
+                    allNum = [line[3] for line in lines]
+                    clustGenes = [line[4] for line in lines]
+                    pVals = [float(line[5]) for line in lines]
+
                 min1 = float(1)
                 curMiRNA = []
                 daRest = []
@@ -497,6 +492,7 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir='exp',
 
 def write_combined_report(mirv_score_path):
     # Get miRvestigator results
+    print("Retrieving miRvestigator results...", file=sys.stderr, end="", flush=True)
     miRNA_matches = {}
     with open(mirv_score_path,'r') as inFile:
         inFile.readline() # get rid of header
@@ -510,8 +506,10 @@ def write_combined_report(mirv_score_path):
                 cluster_name = cluster_name[1]+'_'+cluster_name[2]+'_'+cluster_name[3]+'_'+cluster_name[0]
                 miRNA_matches[cluster_name] = {'miRNA':line[1],'model':line[2],'mature_seq_ids':miRNA_mature_seq_ids}
 
-    print('Loaded miRvestigator.')
+    print('Done.', file=sys.stderr)
+
     # Get PITA results
+    print("Retrieving PITA results...", file=sys.stderr, end="", flush=True)
     with open(os.path.join('miRNA', 'mergedResults_PITA.csv'), 'r') as inFile:
         inFile.readline() # get rid of header
         lines = [i.strip().split(',') for i in inFile.readlines()]
@@ -530,9 +528,10 @@ def write_combined_report(mirv_score_path):
                 miRNA_matches[line[0]+'_'+line[1]]['pita_perc_targets'] = str(float(line[3])/float(line[6]))
                 miRNA_matches[line[0]+'_'+line[1]]['pita_pValue'] = line[7]
                 miRNA_matches[line[0]+'_'+line[1]]['pita_mature_seq_ids'] = miRNA_mature_seq_ids
-    print('Loaded PITA.')
+    print('Done.', file=sys.stderr)
 
     # Get TargetScan results
+    print("Retrieving Targetscan results...", file=sys.stderr, end="", flush=True)
     with open(os.path.join('miRNA', 'mergedResults_TargetScan.csv'),'r') as inFile:
         inFile.readline() # get rid of header
         lines = [i.strip().split(',') for i in inFile.readlines()]
@@ -551,7 +550,7 @@ def write_combined_report(mirv_score_path):
                 miRNA_matches[line[0]+'_'+line[1]]['ts_perc_targets'] = str(float(line[3])/float(line[6]))
                 miRNA_matches[line[0]+'_'+line[1]]['ts_pValue'] = line[7]
                 miRNA_matches[line[0]+'_'+line[1]]['ts_mature_seq_ids'] = miRNA_mature_seq_ids
-    print('Loaded TargetScan.')
+    print('Done.', file=sys.stderr)
 
     # Big list of all miRNAs for all clusters
     with open('combinedResults.csv','w') as outFile:
