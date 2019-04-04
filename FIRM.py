@@ -148,30 +148,30 @@ def cluster_hypergeo(params):
     cluster, cluster_genes = params
     sys.stderr.write(".")
     sys.stderr.flush()
-    outFile = open('miRNA_'+db+'/'+str(dataset[0])+'_'+str(cluster)+'.csv','w')
-    outFile.write('miRNA,Cluster.Targets,miRNA.Targets,Cluster.Genes,Total,P.Value\n')
-    # k = overlap, N = potential target genes, n = miRNA targets, m = cluster genes
-    # Take gene list and compute overlap with each miRNA
-    allGenes = set(dataset_genes).intersection(set(total_targets))
-    genes = set(cluster_genes).intersection(set(allGenes))
-    writeMe = []
-    keys1 = mirna_target_dict.keys()
-    m1s = []
-    q = []
-    m = []
-    n = []
-    k = []
-    for m1 in keys1:
-        m1s.append(m1)
-        miRNAGenes = set(mirna_target_dict[m1]).intersection(allGenes)
-        q.append(len(set(miRNAGenes).intersection(genes)))
-        m.append(len(miRNAGenes))
-        n.append(len(allGenes) - len(miRNAGenes))
-        k.append(len(genes))
-    results = phyper(q, m, n, k)
-    for i in range(len(m1s)):
-        writeMe.append(str(m1s[i]) + ',' + str(q[i]) + ',' + str(m[i]) + ',' + str(n[i]) + ',' + str(k[i]) + ',' + str(results[i]))
-    outFile.write('\n'.join(writeMe))
+    with open('miRNA_'+db+'/'+str(dataset[0])+'_'+str(cluster)+'.csv','w') as outfile:
+        outfile.write('miRNA,Cluster.Targets,miRNA.Targets,Cluster.Genes,Total,P.Value\n')
+        # k = overlap, N = potential target genes, n = miRNA targets, m = cluster genes
+        # Take gene list and compute overlap with each miRNA
+        allGenes = set(dataset_genes).intersection(set(total_targets))
+        genes = set(cluster_genes).intersection(set(allGenes))
+        writeMe = []
+        keys1 = mirna_target_dict.keys()
+        m1s = []
+        q = []
+        m = []
+        n = []
+        k = []
+        for m1 in keys1:
+            m1s.append(m1)
+            miRNAGenes = set(mirna_target_dict[m1]).intersection(allGenes)
+            q.append(len(set(miRNAGenes).intersection(genes)))
+            m.append(len(miRNAGenes))
+            n.append(len(allGenes) - len(miRNAGenes))
+            k.append(len(genes))
+        results = phyper(q, m, n, k)
+        for i in range(len(m1s)):
+            writeMe.append(str(m1s[i]) + ',' + str(q[i]) + ',' + str(m[i]) + ',' + str(n[i]) + ',' + str(k[i]) + ',' + str(results[i]))
+        outfile.write('\n'.join(writeMe))
 
 
 # Sort two lists based on one of the lists
