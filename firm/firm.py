@@ -28,10 +28,9 @@ def mirna_name_matches(a, b):
 
 # Run weeder and parse its output
 # First weederTFBS -W 6 -e 1, then weederTFBS -W 8 -e 2, and finally adviser
-def run_weeder(seqFile):
-    if not os.path.exists('tmp/weeder'):
-        os.makedirs('tmp/weeder')
-    print(seqFile)
+def run_weeder(params):
+    seqFile, tmpdir = params
+    print(".", end="", file=sys.stderr, flush=True)
     weeder_pssms = []
     percTargets = 50
     revComp = False
@@ -40,8 +39,8 @@ def run_weeder(seqFile):
     weederArgs = ' ' + str(seqFile) + ' HS3P small T50'
     if revComp:
         weederArgs += ' -S'
-    errOut = open('tmp/weeder/stderr.out','w')
-    weederProc = Popen("weederlauncher " + weederArgs, shell=True,stdout=PIPE,stderr=errOut)
+    errOut = open(os.path.join(tmpdir, 'weeder', 'stderr.out'), 'w')
+    weederProc = Popen("weederlauncher " + weederArgs, shell=True, stdout=PIPE, stderr=errOut)
     output = weederProc.communicate()
 
     # Now parse output from weeder
@@ -243,9 +242,7 @@ def read_sequences(seq_path):
     return seqs
 
 
-WEEDER_FASTA_DIR = "tmp/weeder/fasta"
-
-def prepare_weeder_input(seqs, refSeq2entrez, use_entrez, exp_dir):
+def prepare_weeder_input(seqs, refSeq2entrez, use_entrez, exp_dir, tmpdir):
     # For each cluster file in exp from Goodarzi et al.
     # Cluster files should have a header and be tab delimited to look like this:
     # Gene\tGroup\n
@@ -254,8 +251,9 @@ def prepare_weeder_input(seqs, refSeq2entrez, use_entrez, exp_dir):
     # ...
     fasta_files = []
     files = os.listdir(exp_dir)
-    if not os.path.exists(WEEDER_FASTA_DIR):
-        os.makedirs(WEEDER_FASTA_DIR)
+    weeder_fasta_dir = os.path.join(tmpdir, 'weeder', 'fasta')
+    if not os.path.exists(weeder_fasta_dir):
+        os.makedirs(weeder_fasta_dir)
 
     for file in files:
         # 3. Read in cluster file and convert to entrez ids
@@ -282,11 +280,12 @@ def prepare_weeder_input(seqs, refSeq2entrez, use_entrez, exp_dir):
                 if str(target) in seqs:
                     cluster_seqs[target] = seqs[str(target)]
                 else:
-                    print("Did not find seq for '%s' (cluster %d)" % (target, cluster))
+                    print("Did not find seq for '%s' (cluster %d)" % (target, cluster),
+                          file=sys.stderr)
 
             # Make FASTA file
             fname = "%d_%s.fasta" % (cluster, dataset)
-            fpath = os.path.join(WEEDER_FASTA_DIR,fname)
+            fpath = os.path.join(weeder_fasta_dir, fname)
             fasta_files.append(fpath)
 
             with open(fpath, 'w') as outfile:
@@ -296,15 +295,14 @@ def prepare_weeder_input(seqs, refSeq2entrez, use_entrez, exp_dir):
     return fasta_files
 
 
-def find_motifs(fasta_files):
+def find_motifs(fasta_files, tmpdir):
     # Setup for multiprocessing
     # Run this using all cores available
-    print('Starting Weeder runs...')
     cpus = cpu_count()
-    print('There are %d CPUs available.' % cpus)
+    print('Starting Weeder runs (%d CPUs available)...' % cpus, file=sys.stderr)
     pool = Pool(processes=cpus)
-    pssms_list = pool.map(run_weeder, fasta_files)
-    print('Done with Weeder runs.')
+    pssms_list = pool.map(run_weeder, [(f, tmpdir) for f in fasta_files])
+    print('Done with Weeder runs.', file=sys.stderr)
 
     # Compare to miRDB using my program
     final_pssms = [pssm for pssms in pssms_list for pssm in pssms]

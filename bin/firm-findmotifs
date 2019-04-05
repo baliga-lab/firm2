@@ -30,8 +30,9 @@ if __name__ == '__main__':
 
     # First stage: run Weeder on the input clusters and write out the
     # PSSMs to a JSON file
-    fasta_files = firm.prepare_weeder_input(seqs, refSeq2entrez, args.use_entrez, args.expdir)
-    weeder_pssms = firm.find_motifs(fasta_files)
+    fasta_files = firm.prepare_weeder_input(seqs, refSeq2entrez, args.use_entrez, args.expdir,
+                                            args.tmpdir)
+    weeder_pssms = firm.find_motifs(fasta_files, args.tmpdir)
     with open(os.path.join(args.outdir, 'pssms.json'), 'w') as outfile:
         json.dump(weeder_pssms, outfile)
 
