@@ -425,9 +425,9 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir,
                         if tmpMiRNA[-3:]=='-5p':
                             tmpMiRNA = tmpMiRNA[:-3]
                         curMiRNA.append(tmpMiRNA)
-                tmp = overlapFile.rstrip('.csv').split('_')
-                dataset = tmp[0]+'_'+tmp[1]+'_'+tmp[2]
-                cluster = tmp[3]
+                comps = overlapFile.rstrip('.csv').split('_')
+                dataset = '_'.join(comps[:-1])
+                cluster = comps[-1]
                 outFile.write('\n' + dataset + ',' + cluster + ',' + ' '.join(curMiRNA) +
                               ',' + ','.join(daRest) + ',' + str(min1))
                 enrichment.append({'dataset':dataset,
@@ -526,8 +526,10 @@ def write_combined_report(mirv_score_path, mirna_ids, outdir):
     with open(os.path.join(outdir, 'combinedResults.csv'), 'w') as outFile:
         outFile.write('Dataset,signature,miRvestigator.miRNA,miRvestigator.model,miRvestigator.mature_seq_ids,PITA.miRNA,PITA.percent_targets,PITA.P_Value,PITA.mature_seq_ids,TargetScan.miRNA,TargetScan.percent_targets,TargetScan.P_Value,TargetScan.mature_seq_ids')
         for i in miRNA_matches:
-            splitUp = i.split('_')
-            writeMe = '\n'+splitUp[0]+'_'+splitUp[1]+'_'+splitUp[2]+','+splitUp[3]
+            comps = i.split('_')
+            dataset = '_'.join(comps[:-1])
+            cluster = comps[-1]
+            writeMe = '\n%s,%s' % (dataset, cluster)
             if 'miRNA' in miRNA_matches[i]:
                 writeMe += ',' + miRNA_matches[i]['miRNA'] + ','+miRNA_matches[i]['model']+',' + ' '.join(miRNA_matches[i]['mature_seq_ids'])
             else:
