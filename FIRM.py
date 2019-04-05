@@ -144,11 +144,12 @@ def phyper(q, m, n, k):
 
 
 def cluster_hypergeo(params):
-    global db, dataset, dataset_genes, total_targets, mirna_target_dict
-    cluster, cluster_genes = params
+    global db, dataset_genes, total_targets, mirna_target_dict
+    cluster, cluster_genes, dataset, dboutdir = params
     sys.stderr.write(".")
     sys.stderr.flush()
-    with open('miRNA_'+db+'/'+str(dataset[0])+'_'+str(cluster)+'.csv','w') as outfile:
+    outpath = os.path.join(dboutdir, '%s_%s.csv' % (dataset, str(cluster)))
+    with open(outpath, 'w') as outfile:
         outfile.write('miRNA,Cluster.Targets,miRNA.Targets,Cluster.Genes,Total,P.Value\n')
         # k = overlap, N = potential target genes, n = miRNA targets, m = cluster genes
         # Take gene list and compute overlap with each miRNA
@@ -322,8 +323,8 @@ dataset_genes = None
 total_targets = None
 mirna_target_dict = None
 
-def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir,
-                              outdir, pred_db_dir):
+def run_target_prediction_dbs(refSeq2entrez, exp_dir,
+                              outdir, tmpdir, pred_db_dir, use_entrez):
     global db, dataset, dataset_genes, total_targets, mirna_target_dict
 
     mgr = Manager()
@@ -332,6 +333,11 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir,
     # Now do PITA and TargetScan - iterate through both platforms
     for db in dbs:
         print("checking against prediction database: '%s'" % db, file=sys.stderr)
+        dboutdir = os.path.join(tmpdir, 'miRNA_%s' % db)
+        if not os.path.exists(dboutdir):
+            os.mkdir(dboutdir)
+
+
         # Get ready for multiprocessor goodness
         cpus = cpu_count()
 
@@ -359,8 +365,8 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir,
         for file in files:
             # 3. Read in cluster file and convert to entrez ids
             with open(os.path.join(exp_dir, file), 'r') as inFile:
-                dataset = mgr.list([file.strip().split('.')[0]])
-                print("Data set: '%s'..." % dataset[0], file=sys.stderr)
+                dataset = file.strip().split('.')[0]
+                print("Data set: '%s'..." % dataset, file=sys.stderr)
                 inFile.readline()
                 lines = inFile.readlines()
                 clusters = defaultdict(list)
@@ -383,23 +389,23 @@ def run_target_prediction_dbs(refSeq2entrez, use_entrez, exp_dir,
             dataset_genes = mgr.list(genes)
 
             # Iterate through clusters and compute p-value for each miRNA
-            if not os.path.exists('miRNA_' + db):
-                os.mkdir('miRNA_' + db)
-
             # Run this using all cores available
             pool = Pool(processes=cpus)
-            pool.map(cluster_hypergeo, list(clusters.items()))
+            params = [(cluster, cluster_genes, dataset, dboutdir)
+                      for cluster, cluster_genes in clusters.items()]
+            pool.map(cluster_hypergeo, params)
             print('Done.', file=sys.stderr)
 
-        # 1. Get a list of all files in miRNA directory
-        overlapFiles = os.listdir('miRNA_' + db)
+        # 1. Get a list of all resulting overlap files in miRNA directory
+        overlapFiles = os.listdir(dboutdir)
 
         # 2. Read them all in and grab the top hits
         with open(os.path.join(outdir, 'mergedResults_%s.csv' % db), 'w') as outFile:
             outFile.write('Dataset,Cluster,miRNA,q,m,n,k,p.value')
             enrichment = []
             for overlapFile in overlapFiles:
-                with open('miRNA_' + db + '/' + overlapFile, 'r') as inFile:
+                overlap_path = os.path.join(dboutdir, overlapFile)
+                with open(overlap_path, 'r') as inFile:
                     inFile.readline() # Get rid of header
                     lines = [line.strip().split(',') for line in inFile.readlines()]
                     miRNAs = [line[0].lstrip(db+'_') for line in lines]
@@ -552,9 +558,16 @@ if __name__ == '__main__':
                                      description=DESCRIPTION)
     parser.add_argument('-ue', '--use_entrez', action='store_true',
                         help="input file uses entrez IDs instead of RefSeq")
+    parser.add_argument('-t', '--tmpdir', default='tmp',
+                        help="temporary directory")
     parser.add_argument('expdir', help='expressions directory')
     parser.add_argument('outdir', help='output directory')
     args = parser.parse_args()
+
+    if not os.path.exists(args.outdir):
+        os.makedirs(args.outdir)
+    if not os.path.exists(args.tmpdir):
+        os.makedirs(args.tmpdir)
 
     use_entrez = args.use_entrez
     refSeq2entrez = make_refseq2entrez('common/gene2refseq.gz')
@@ -577,13 +590,13 @@ if __name__ == '__main__':
 
     # TODO: run our actual miRvestigator as external tool
     """
-    if not os.path.exists(args.outdir):
-        os.makedirs(args.outdir)
 
-    run_target_prediction_dbs(refSeq2entrez, use_entrez,
+    run_target_prediction_dbs(refSeq2entrez,
                               exp_dir=args.expdir,
                               outdir=args.outdir,
-                              pred_db_dir='TargetPredictionDatabases')
+                              tmpdir=args.tmpdir,
+                              pred_db_dir='TargetPredictionDatabases',
+                              use_entrez=use_entrez)
 
     # used in combined report !!! make sure to pass them there
     mirna_ids = make_mirna_dicts('common/hsa.mature.fa')
