@@ -296,14 +296,14 @@ def prepare_weeder_input(seqs, refSeq2entrez, use_entrez, exp_dir):
     return fasta_files
 
 
-def run_mirvestigator(fastaFiles):
+def find_motifs(fasta_files):
     # Setup for multiprocessing
     # Run this using all cores available
     print('Starting Weeder runs...')
     cpus = cpu_count()
     print('There are %d CPUs available.' % cpus)
     pool = Pool(processes=cpus)
-    pssms_list = pool.map(run_weeder, fastaFiles)
+    pssms_list = pool.map(run_weeder, fasta_files)
     print('Done with Weeder runs.')
 
     # Compare to miRDB using my program
@@ -550,6 +550,7 @@ if __name__ == '__main__':
                                      description=DESCRIPTION)
     parser.add_argument('-ue', '--use_entrez', action='store_true',
                         help="input file uses entrez IDs instead of RefSeq")
+    parser.add_argument('expdir', help='expressions directory')
     parser.add_argument('outdir', help='output directory')
     args = parser.parse_args()
 
@@ -561,13 +562,13 @@ if __name__ == '__main__':
 
     # First stage: run Weeder on the input clusters and write out the
     # PSSMs to a JSON file
-    fastaFiles = prepare_weeder_input(seqs, refSeq2entrez, use_entrez, "exp")
-    weeder_pssms = run_mirvestigator(fastaFiles)
+    fasta_files = prepare_weeder_input(seqs, refSeq2entrez, use_entrez, args.expdir)
+    weeder_pssms = find_motifs(fasta_files)
     with open('pssms.json', 'w') as outfile:
         json.dump(weeder_pssms, outfile)
 
     # Write the 3' UTR sequences to pass as as a filter for miRvestigator
-    # TODO: we actually only the the original 3' UTR source files
+    # we actually could use the original 3' UTR source files, but a line file is simpler
     with open('seqs.txt', 'w') as outfile:
         for seq in seqs.values():
             outfile.write("%s\n" % seq)
@@ -578,7 +579,7 @@ if __name__ == '__main__':
         os.makedirs(args.outdir)
 
     run_target_prediction_dbs(refSeq2entrez, use_entrez,
-                              exp_dir='exp',
+                              exp_dir=args.expdir,
                               outdir=args.outdir,
                               pred_db_dir='TargetPredictionDatabases')
 
