@@ -468,7 +468,8 @@ def run_target_prediction_dbs(refSeq2entrez, exp_dir,
                 outFile.write('\n'+filtered[clust]['dataset']+','+filtered[clust]['cluster']+','+miRNA+','+str(float(enrichment[clust]['q'])/float(enrichment[clust]['k'])))
 
 
-def write_combined_report(mirv_score_path, mirna_ids, outdir):
+def write_combined_report(mirv_score_path, mirbase_path, outdir):
+    mirna_ids = make_mirna_dicts(mirbase_path)
     # Get miRvestigator results
     print("Retrieving miRvestigator results...", file=sys.stderr, end="", flush=True)
     miRNA_matches = {}
@@ -598,7 +599,6 @@ if __name__ == '__main__':
                               pred_db_dir='TargetPredictionDatabases',
                               use_entrez=use_entrez)
 
-    # used in combined report !!! make sure to pass them there
-    mirna_ids = make_mirna_dicts('common/hsa.mature.fa')
     # TODO: paths for merged PITA/TargetScan results
-    write_combined_report('mirv_scores.csv', mirna_ids, outdir=args.outdir)
+    write_combined_report('mirv_scores.csv', 'common/hsa.mature.fa',
+                          outdir=args.outdir)
