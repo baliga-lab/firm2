@@ -1,10 +1,9 @@
 import argparse
-from pssm import pssm
+from firm.pssm import pssm
 import gzip, os, re, sys
 from subprocess import *
 from multiprocessing import Pool, cpu_count, Manager
 from collections import defaultdict
-from miRvestigator import miRvestigator
 import json
 
 
