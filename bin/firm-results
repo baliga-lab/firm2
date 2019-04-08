@@ -16,7 +16,7 @@ if __name__ == '__main__':
                         help="temporary directory")
     parser.add_argument('-pd', '--preddir', default='TargetPredictionDatabases',
                         help="target prediction directory")
-    parser.add_argument('-mf', '--maturefa', default='common/hsa.mature.fa',
+    parser.add_argument('-mf', '--maturefa', default='common/mature.fa.gz',
                         help="path to mature.fa file")
     parser.add_argument('g2refseq', help="path to gene2refseq.gz file")
     parser.add_argument('expdir', help='expression input directory')

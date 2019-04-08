@@ -189,22 +189,27 @@ def benjamini_hochberg(dict1, tests, alpha=0.001):
     return res1
 
 
-def make_mirna_dicts(mirna_path):
-    """reads the mature.fa.gz and returns a mapping from
-    miRNA names => miRNA ids"""
+def make_mirna_dict(mirna_path):
+    """reads the mature.fa.gz and returns a mapping from miRNA names => miRNA ids.
+    This was changed from the original FIRM so we can use updated mature.fa.gz
+    files instead of a prefiltered, potentially outdated file"""
     mirna_ids = {}
-    with open(mirna_path, 'r') as inFile:
-        while 1:
-            inLine = inFile.readline()
-            if not inLine:
+    with gzip.open(mirna_path, 'r') as infile:
+        while True:
+            desc = infile.readline()
+            if not desc:
                 break
-            splitUp = inLine.split(' ')
-            mirna_name = splitUp[0].lower()
-            mirna_id = splitUp[1]
-            if not mirna_name in mirna_ids:
-                mirna_ids[mirna_name] = mirna_id
-            else:
-                raise Exception("already exists: '%s'" % mirna_name)
+            infile.readline()  # skip the sequence line
+            desc = desc.decode('utf-8')
+            if desc.startswith('>hsa'):
+                comps = desc.lstrip('>').split(' ')
+                mirna_name = comps[0].lower()
+                mirna_id = comps[1]
+
+                if not mirna_name in mirna_ids:
+                    mirna_ids[mirna_name] = mirna_id
+                else:
+                    raise Exception("already exists: '%s'" % mirna_name)
 
     return mirna_ids
 
@@ -466,7 +471,7 @@ def run_target_prediction_dbs(refSeq2entrez, exp_dir,
 
 
 def write_combined_report(mirv_score_path, mirbase_path, outdir):
-    mirna_ids = make_mirna_dicts(mirbase_path)
+    mirna_ids = make_mirna_dict(mirbase_path)
     # Get miRvestigator results
     print("Retrieving miRvestigator results...", file=sys.stderr, end="", flush=True)
     miRNA_matches = {}
