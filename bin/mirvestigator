@@ -1,0 +1,4 @@
+#!/bin/bash
+
+../mirvestigator_rust/target/release/mirvestigator $1 $2 $3
+# TODO: Python version
