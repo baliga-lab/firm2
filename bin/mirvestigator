@@ -1,4 +1,46 @@
-#!/bin/bash
+#!/home/weiju/Projects/ISB/tmp/firm_test/bin/python3
+import argparse
+import os
+import time
+import json
+import pickle
+from firm import pssm
+from firm.miRvestigator import miRvestigator
 
-../mirvestigator_rust/target/release/mirvestigator $1 $2 $3
+#../mirvestigator_rust/target/release/mirvestigator $1 $2 $3
 # TODO: Python version
+
+DESCRIPTION = "miRvestigator.py - standalone miRvestigator"
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
+                                     description=DESCRIPTION)
+    parser.add_argument('seqs', help='seqs.txt file')
+    parser.add_argument('pssms', help='pssms file')
+    args = parser.parse_args()
+
+    if not os.path.exists(args.seqs):
+        raise Exception('seqs.txt file does not exist')
+    if not os.path.exists(args.pssms):
+        raise Exception('pssms.json file does not exist')
+
+    with open(args.seqs) as infile:
+        seqs = infile.readlines()
+
+    pssms = []
+    with open(args.pssms) as infile:
+        pssms_json = json.load(infile)
+        for pssm_json in pssms_json:
+            pssms.append(pssm.pssm(name=pssm_json['name'],
+                                   sites=pssm_json['nsites'],
+                                   evalue=pssm_json['evalue'],
+                                   pssm=pssm_json['matrix']))
+
+    t1 = time.time()
+    m2m = miRvestigator(pssms, seqs, seedModel=[6,7,8], minor=True, p5=True,
+                        p3=True, wobble=False, wobbleCut=0.25,
+                        use_multiprocessing=True)
+    with open('m2m_standalone.pkl', 'wb') as outfile:
+        pickle.dump(m2m, outfile)
+    t2 = time.time()
+    print("Completed miRvestigator in {:.2f} minutes".format((t2-t1)/60.))
