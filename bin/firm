@@ -5,5 +5,6 @@ if [ "$#" -ne 3 ]; then
     exit 0
 fi
 PYTHONPATH=. bin/firm-findmotifs --use_entrez -t $1 common/p3utrSeqs_Homo_sapiens.csv.gz common/gene2refseq.gz $2 $3
-PYTHONPATH=. bin/mirvestigator $3/seqs.txt $3/pssms.json common/mature.fa.gz > $3/mirv_scores.csv
-PYTHONPATH=. bin/firm-results -t $1 common/gene2refseq.gz $2 $3/mirv_scores.csv $3
+#PYTHONPATH=. bin/mirvestigator $3/seqs.txt $3/pssms.json common/mature.fa.gz > $3/mirv_scores.csv
+PYTHONPATH=. bin/mirvestigator $3 $3
+PYTHONPATH=. bin/firm-results --use_entrez -t $1 common/gene2refseq.gz $2 $3/miRNA/scores.csv $3

@@ -15,32 +15,38 @@ DESCRIPTION = "miRvestigator.py - standalone miRvestigator"
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                                      description=DESCRIPTION)
-    parser.add_argument('seqs', help='seqs.txt file')
-    parser.add_argument('pssms', help='pssms file')
+    parser.add_argument('indir', help='input directory containing seqs.txt and pssms.json files')
+    parser.add_argument('outdir', help='output directory to place the miRNA directory in')
     args = parser.parse_args()
 
-    if not os.path.exists(args.seqs):
-        raise Exception('seqs.txt file does not exist')
-    if not os.path.exists(args.pssms):
-        raise Exception('pssms.json file does not exist')
+    if not os.path.exists(args.indir):
+        raise Exception('input directory does not exist')
+    if not os.path.exists(os.path.join(args.indir, 'seqs.txt')):
+        raise Exception('seqs.txt file not found in input directory')
+    if not os.path.exists(os.path.join(args.indir, 'pssms.json')):
+        raise Exception('pssms.json file not found in input directory')
 
-    with open(args.seqs) as infile:
+    if not os.path.exists(args.outdir):
+        os.makedirs(args.outdir)
+
+    with open(os.path.join(args.indir, 'seqs.txt')) as infile:
         seqs = infile.readlines()
 
     pssms = []
-    with open(args.pssms) as infile:
+    with open(os.path.join(args.indir, 'pssms.json')) as infile:
         pssms_json = json.load(infile)
         for pssm_json in pssms_json:
             pssms.append(pssm.pssm(name=pssm_json['name'],
-                                   sites=pssm_json['nsites'],
+                                   sites=pssm_json['sites'],
                                    evalue=pssm_json['evalue'],
                                    pssm=pssm_json['matrix']))
 
     t1 = time.time()
     m2m = miRvestigator(pssms, seqs, seedModel=[6,7,8], minor=True, p5=True,
                         p3=True, wobble=False, wobbleCut=0.25,
-                        use_multiprocessing=True)
-    with open('m2m_standalone.pkl', 'wb') as outfile:
+                        use_multiprocessing=True,
+                        baseDir=args.outdir)
+    with open(os.path.join(args.outdir, 'm2m_standalone.pkl'), 'wb') as outfile:
         pickle.dump(m2m, outfile)
     t2 = time.time()
     print("Completed miRvestigator in {:.2f} minutes".format((t2-t1)/60.))

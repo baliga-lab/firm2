@@ -364,10 +364,11 @@ def run_target_prediction_dbs(refSeq2entrez, exp_dir,
 
         # For each cluster file in expfiles from Goodarzi et al.
         files = os.listdir(exp_dir)
-        for file in files:
+        for f in files:
             # 3. Read in cluster file and convert to entrez ids
-            with open(os.path.join(exp_dir, file), 'r') as inFile:
-                dataset = file.strip().split('.')[0]
+            print("File '%s'" % f)
+            with open(os.path.join(exp_dir, f), 'r') as inFile:
+                dataset = f.strip().split('.')[0]
                 print("Data set: '%s'..." % dataset, file=sys.stderr)
                 inFile.readline()
                 lines = inFile.readlines()

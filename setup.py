@@ -1,6 +1,5 @@
 import os
 import re
-import codecs
 from setuptools import setup
 
 NAME = 'firm'
@@ -33,6 +32,9 @@ CLASSIFIERS = [
     "Topic :: Software Development :: Libraries :: Python Modules"
     ]
 
+PACKAGE_DATA = {
+    'firm': ['common/*']
+}
 
 if __name__ == '__main__':
     setup(name=NAME, description=DESCRIPTION,
@@ -47,4 +49,5 @@ if __name__ == '__main__':
           packages=PACKAGES,
           zip_safe=False,
           classifiers=CLASSIFIERS,
+          include_package_data=True, package_data=PACKAGE_DATA,
           scripts=['bin/firm', 'bin/firm-findmotifs', 'bin/firm-results', 'bin/mirvestigator'])
