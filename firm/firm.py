@@ -26,21 +26,30 @@ def mirna_name_matches(a, b):
     return 0
 
 
+def check_weederlauncher():
+    """Check whether weederlauncher exists on this system"""
+    for d in os.environ["PATH"].split(os.pathsep):
+        filepath = os.path.join(d, 'weederlauncher')
+        if os.path.isfile(filepath) and os.access(filepath, os.X_OK):
+            return True
+    return False
+
+
 # Run weeder and parse its output
 # First weederTFBS -W 6 -e 1, then weederTFBS -W 8 -e 2, and finally adviser
 def run_weeder(params):
-    seqFile, tmpdir = params
+    seqFile, tmpdir, freqfiles = params
     print(".", end="", file=sys.stderr, flush=True)
     weeder_pssms = []
     percTargets = 50
     revComp = False
 
     # First run weederTFBS for 6bp motifs
-    weederArgs = ' ' + str(seqFile) + ' HS3P small T50'
+    weeder_args = ' ' + str(seqFile) + ' HS3P small T50 F%s' % freqfiles
     if revComp:
-        weederArgs += ' -S'
+        weeder_args += ' -S'
     errOut = open(os.path.join(tmpdir, 'weeder', 'stderr.out'), 'w')
-    weederProc = Popen("weederlauncher " + weederArgs, shell=True, stdout=PIPE, stderr=errOut)
+    weederProc = Popen("weederlauncher " + weeder_args, shell=True, stdout=PIPE, stderr=errOut)
     output = weederProc.communicate()
 
     # Now parse output from weeder
@@ -300,13 +309,13 @@ def prepare_weeder_input(seqs, refSeq2entrez, use_entrez, exp_dir, tmpdir):
     return fasta_files
 
 
-def find_motifs(fasta_files, tmpdir):
+def find_motifs(fasta_files, tmpdir, freqfiles):
     # Setup for multiprocessing
     # Run this using all cores available
     cpus = cpu_count()
     print('Starting Weeder runs (%d CPUs available)...' % cpus, file=sys.stderr)
     pool = Pool(processes=cpus)
-    pssms_list = pool.map(run_weeder, [(f, tmpdir) for f in fasta_files])
+    pssms_list = pool.map(run_weeder, [(f, tmpdir, freqfiles) for f in fasta_files])
     print('Done with Weeder runs.', file=sys.stderr)
 
     # Compare to miRDB using my program

@@ -50,4 +50,4 @@ if __name__ == '__main__':
           zip_safe=False,
           classifiers=CLASSIFIERS,
           include_package_data=True, package_data=PACKAGE_DATA,
-          scripts=['bin/firm', 'bin/firm-findmotifs', 'bin/firm-results', 'bin/mirvestigator'])
+          scripts=['bin/firm', 'bin/firm-convertminer'])
