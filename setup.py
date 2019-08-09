@@ -33,7 +33,9 @@ CLASSIFIERS = [
     ]
 
 PACKAGE_DATA = {
-    'firm': ['common/*']
+    'firm': ['common/*', 'FreqFiles/*',
+             'TargetPredictionDatabases/PITA/*',
+             'TargetPredictionDatabases/TargetScan']
 }
 
 if __name__ == '__main__':
