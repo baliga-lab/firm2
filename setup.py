@@ -2,7 +2,7 @@ import os
 import re
 from setuptools import setup
 
-NAME = 'isb-firm'
+NAME = 'isb_firm'
 PACKAGES = ['firm']
 DESCRIPTION = 'Framework for inference  of regulation by miRNAs'
 LICENSE = 'LGPL V3'
