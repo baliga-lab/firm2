@@ -2,11 +2,11 @@ import os
 import re
 from setuptools import setup
 
-NAME = 'firm'
+NAME = 'isb-firm'
 PACKAGES = ['firm']
-DESCRIPTION = 'FIRM'
+DESCRIPTION = 'Framework for inference  of regulation by miRNAs'
 LICENSE = 'LGPL V3'
-URI = 'https://github.com/baliga-lab/firmtoo'
+URI = 'https://github.com/baliga-lab/firm2'
 AUTHOR = 'Baliga Lab, Institute for Systems Biology'
 VERSION = '1.0.0'
 
@@ -35,7 +35,7 @@ CLASSIFIERS = [
 PACKAGE_DATA = {
     'firm': ['common/*', 'FreqFiles/*',
              'TargetPredictionDatabases/PITA/*',
-             'TargetPredictionDatabases/TargetScan']
+             'TargetPredictionDatabases/TargetScan/*']
 }
 
 if __name__ == '__main__':

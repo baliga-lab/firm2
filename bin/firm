@@ -30,6 +30,7 @@ def firm_findmotifs(p3utrseqs_path, g2refseq_path, freqfiles_path,
 
     # First stage: run Weeder on the input clusters and write out the
     # PSSMs to a JSON file
+    t1 = time.time()
     fasta_files = firm.prepare_weeder_input(seqs, refSeq2entrez, use_entrez, expdir,
                                             tmpdir)
     weeder_pssms = firm.find_motifs(fasta_files, tmpdir, freqfiles_path)
