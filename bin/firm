@@ -11,7 +11,7 @@ from firm import firm
 from firm import pssm
 from firm.miRvestigator import miRvestigator
 
-
+PACKAGE_NAME = "isb-firm"
 USER_P3UTR_PATH = 'firm/common/p3utrSeqs_Homo_sapiens.csv.gz'
 USER_G2REFSEQ_PATH = 'firm/common/gene2refseq.gz'
 USER_MATUREFA_PATH = 'firm/common/mature.fa.gz'
@@ -110,27 +110,27 @@ if __name__ == '__main__':
     # File paths that are contained in the distribution now, in the future can be
     # overridden by command line options
     try:
-        p3utr_path = resource_filename(Requirement.parse("firm"), USER_P3UTR_PATH)
+        p3utr_path = resource_filename(Requirement.parse(PACKAGE_NAME), USER_P3UTR_PATH)
     except DistributionNotFound:
         p3utr_path = USER_P3UTR_PATH
 
     try:
-        g2refseq_path = resource_filename(Requirement.parse("firm"), USER_G2REFSEQ_PATH)
+        g2refseq_path = resource_filename(Requirement.parse(PACKAGE_NAME), USER_G2REFSEQ_PATH)
     except DistributionNotFound:
         g2refseq_path = USER_G2REFSEQ_PATH
 
     try:
-        freqfiles_path = resource_filename(Requirement.parse("firm"), USER_FREQFILES_PATH)
+        freqfiles_path = resource_filename(Requirement.parse(PACKAGE_NAME), USER_FREQFILES_PATH)
     except DistributionNotFound:
         freqfiles_path = USER_FREQFILES_PATH
 
     try:
-        maturefa_path = resource_filename(Requirement.parse("firm"), USER_MATUREFA_PATH)
+        maturefa_path = resource_filename(Requirement.parse(PACKAGE_NAME), USER_MATUREFA_PATH)
     except DistributionNotFound:
         maturefa_path = USER_MATUREFA_PATH
 
     try:
-        preddir = resource_filename(Requirement.parse("firm"), USER_PREDDIR)
+        preddir = resource_filename(Requirement.parse(PACKAGE_NAME), USER_PREDDIR)
     except DistributionNotFound:
         preddir = USER_PREDDIR
 
