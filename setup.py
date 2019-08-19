@@ -8,7 +8,7 @@ DESCRIPTION = 'Framework for inference  of regulation by miRNAs'
 LICENSE = 'LGPL V3'
 URI = 'https://github.com/baliga-lab/firm2'
 AUTHOR = 'Baliga Lab, Institute for Systems Biology'
-VERSION = '1.0.1'
+VERSION = '1.0.2'
 
 KEYWORDS = ['miRvestigator', 'firm']
 

@@ -46,7 +46,7 @@ def firm_findmotifs(p3utrseqs_path, g2refseq_path, freqfiles_path,
     print("Completed weeder find motifs in {:.2f} minutes".format((t2-t1)/60.))
 
 
-def mirvestigator(indir, outdir):
+def mirvestigator(indir, outdir, maturefa_path):
     with open(os.path.join(indir, 'seqs.txt')) as infile:
         seqs = infile.readlines()
 
@@ -60,7 +60,8 @@ def mirvestigator(indir, outdir):
                                    pssm=pssm_json['matrix']))
 
     t1 = time.time()
-    m2m = miRvestigator(pssms, seqs, seedModel=[6,7,8], minor=True, p5=True,
+    m2m = miRvestigator(pssms, seqs, maturefa_path,
+                        seedModel=[6,7,8], minor=True, p5=True,
                         p3=True, wobble=False, wobbleCut=0.25,
                         use_multiprocessing=True,
                         baseDir=outdir)
@@ -146,7 +147,7 @@ if __name__ == '__main__':
         print("findmotifs results found, continuing to mirvestigator")
 
     if not os.path.exists(os.path.join(args.outdir, 'm2m_standalone.pkl')):
-        mirvestigator(args.outdir, args.outdir)
+        mirvestigator(args.outdir, args.outdir, maturefa_path)
     else:
         print('mirvestigator results found, continuing to target database matching')
 

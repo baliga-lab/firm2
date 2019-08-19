@@ -25,6 +25,7 @@ import argparse
 import time
 import json
 import multiprocessing
+import gzip
 
 from firm import pssm
 
@@ -46,13 +47,14 @@ from firm import pssm
 #
 class miRvestigator:
     # Initialize and start the run
-    def __init__(self, pssms, seqs3pUTR, seedModel=[6,7,8], minor=True,
+    def __init__(self, pssms, seqs3pUTR, maturefagz_path,
+                 seedModel=[6, 7, 8], minor=True,
                  p5=True, p3=True, textOut=True,
                  wobble=True, wobbleCut=0.25, baseDir='', outName='',
                  use_multiprocessing=True):
         print('\nmiRvestigator analysis started...')
         self.pssms = pssms
-        self.miRNAs = self.setMiRNAs(0,8,minor,p5,p3)
+        self.miRNAs = self.setMiRNAs(maturefagz_path, 0, 8, minor, p5, p3)
         # Trim sequences down
         self.miRNAs_6mer_1 = self.trimSeqs(deepcopy(self.miRNAs),0,6)
         self.miRNAs_6mer_2 = self.trimSeqs(deepcopy(self.miRNAs),1,7)
@@ -361,42 +363,22 @@ class miRvestigator:
             return(seqs)
 
     # Get the miRNAs to compare against
-    def setMiRNAs(self,seedStart,seedEnd, minor=True, p5=True, p3=True):
-        if not os.path.exists('mature.fa.gz'):
-            print('\nDownloading miRNA seeds from miRBase.org...')
-            # Grab down the latest miRNA data from mirbase.org:
-            #  ftp://mirbase.org/pub/mirbase/CURRENT/mature.fa.gz
-            from ftplib import FTP
-            ftp1 = FTP('mirbase.org')
-            ftp1.login()
-            ftp1.cwd('/pub/mirbase/CURRENT/')
-            # Get the miRBase.org version number for reference.
-            self.miRNAver = (ftp1.pwd().split('/'))[-1]
-            outFile = open('mature.fa.gz','wb')
-            ftp1.retrbinary('RETR mature.fa.gz',outFile.write)
-            outFile.close()
-            ftp1.quit()
-            print('Done.')
-        else:
-            print('\nUsing already downloaded miRNA seeds.')
-
+    def setMiRNAs(self, maturefagz_path, seedStart, seedEnd, minor=True, p5=True, p3=True):
         # Read in miRNAs: miRNAs are labeled by the hsa-* names and grabbing 2-8bp
         ### Could merge these as they come in so that don't do redundant, and also so that the labels are together
-        import gzip
-        miRNAFile = gzip.open('mature.fa.gz','r')
-        miRNAs = {}
-        while 1:
-            miRNALine = miRNAFile.readline().decode("utf-8")
-            seqLine = miRNAFile.readline().decode("utf-8")
-            if not miRNALine:
-                break
-            # Get the miRNA name
-            curMiRNA = (miRNALine.lstrip('>').split(' '))[0]
-            if (curMiRNA.split('-'))[0]=='hsa':
-                if (minor==True or curMiRNA.find('*')==-1) and (p5==True or curMiRNA.find('-5p')==-1) and (p3==True or curMiRNA.find('-3p')==-1):
-                    # Now grab out the 2-8bp and do reverse complement on it
-                    miRNAs[curMiRNA] = self.reverseComplement((seqLine.strip())[seedStart:seedEnd])
-        miRNAFile.close()
+        with gzip.open(maturefagz_path, 'r') as miRNAFile:
+            miRNAs = {}
+            while 1:
+                miRNALine = miRNAFile.readline().decode("utf-8")
+                seqLine = miRNAFile.readline().decode("utf-8")
+                if not miRNALine:
+                    break
+                # Get the miRNA name
+                curMiRNA = (miRNALine.lstrip('>').split(' '))[0]
+                if (curMiRNA.split('-'))[0]=='hsa':
+                    if (minor==True or curMiRNA.find('*')==-1) and (p5==True or curMiRNA.find('-5p')==-1) and (p3==True or curMiRNA.find('-3p')==-1):
+                        # Now grab out the 2-8bp and do reverse complement on it
+                        miRNAs[curMiRNA] = self.reverseComplement((seqLine.strip())[seedStart:seedEnd])
 
         # How many distinct kMers in miRNAs
         miRNAuniq = {}
