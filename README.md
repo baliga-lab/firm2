@@ -76,6 +76,21 @@ Gene<Tab>Group
 The -ue / --use_entrez switch is used if the input gene identifiers
 are in Entrez format, otherwise Refseq is used by default.
 
+**Pipeline Stages**
+
+![Pipeline overview](images/pipeline_stages.png)
+
+The FIRM pipeline consists of 3 stages:
+
+  1. Motif discovery: Based on the genes contained in the input clusters, finds
+     common motifs using Weeder
+  2. miRNA discovery: Tries to find miRNAs from mirbase.org using miRvestigator
+     an HMM (Hidden-Markov-Model) based approach
+  3. Matching with prediction databases: This step tries to find the miRNAs obtained
+     in step 2 within target prediction databases, and provides a score. By default this will be
+     PITA and TargetScan.
+
+
 ### firm-convertminer tool
 
 This is a tool to conver MINER regulon files in JSON format to
