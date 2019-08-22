@@ -62,7 +62,18 @@ optional arguments:
 Typically the firm pipeline will expect an input directory ("expdir")
 and an output directory.
 The input directory should contain one or more tab-separated files with
-the suffix ".sgn". Their format should be
+the suffix ".sgn"
+
+```
+inputdir
+  |
+  file1.sgn
+  file2.sgn
+  ...
+```
+
+
+Their format should be
 
 ```
 Gene<Tab>Group
@@ -112,4 +123,61 @@ positional arguments:
 
 optional arguments:
   -h, --help  show this help message and exit
+```
+
+
+## An Example Run
+
+For this example, we will use the data in this projects "exp" directory.
+It looks like this
+
+```
+exp
+  |
+  AD_Lung_Beer.sgn
+```
+
+and the contents of the "AD_Lung_Beer.sgn" file is:
+
+```
+Gene    Group
+NM_000014       32
+NM_000015       23
+NM_000016       6
+NM_000017       10
+NM_000018       56
+...
+```
+
+The first column of the input files are gene identifiers and the second column contain the
+regulon/cluster numbers.
+
+Assuming FIRM has been successfully installed on the user's system the pipeline can
+be run by
+
+```
+  $ firm exp example-out
+```
+
+This command runs all stages of the pipeline, which can take a few hours.
+The final and intermediate results will be found in the "example-out" directory
+after successfully running the pipeline.
+
+```
+  $ ls example-out
+
+combinedResults.csv  filtered_TargetScan.csv  mergedResults_PITA.csv        miRNA       seqs.txt
+filtered_PITA.csv    m2m_standalone.pkl       mergedResults_TargetScan.csv  pssms.json
+```
+
+The combinedResults.csv file is the most important file of the pipeline output.
+
+For our example data set it would look something like this:
+
+```
+Dataset,signature,miRvestigator.miRNA,miRvestigator.model,miRvestigator.mature_seq_ids,PITA.miRNA,PITA.percent_targets,PITA.P_Value,PITA.mature_seq_ids,TargetScan.miRNA,TargetScan.percent_targets,TargetScan.P_Value,TargetScan.mature_seq_ids
+AD_Lung_Beer,19,hsa-miR-487b-3p,7mer_a1,MIMAT0003180,hsa-mir-371-3,0.02,0.0006879498,,hsa-mir-199b,0.09859154929577464,0.0001291377,
+AD_Lung_Beer,31,hsa-miR-29a-3p_hsa-miR-29b-3p_hsa-miR-29c-3p,8mer,MIMAT0000086 MIMAT0000100 MIMAT0000681,hsa-mir-29 hsa-mir-29 hsa-mir-29b,0.2222222222222222,5.801169e-06,,hsa-mir-29b,0.12658227848101267,1.594762e-06,
+AD_Lung_Beer,29,hsa-miR-8071,8mer,MIMAT0030998,hsa-mir-661,0.125,0.0002108273,MIMAT0003324,hsa-mir-100,0.03333333333333333,0.0001221282,
+...
 ```
