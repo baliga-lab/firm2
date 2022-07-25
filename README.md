@@ -7,6 +7,13 @@ easier to use for the general user.
 The FIRM pipeline is made available through a single command line
 command.
 
+## Docker image
+
+A Docker image `weiju/isb-firm` with preinstalled FIRM is available on Docker Hub.
+
+
+```docker pull weiju/isb-firm```
+
 
 ## Installation
 
