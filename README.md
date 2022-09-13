@@ -7,12 +7,28 @@ easier to use for the general user.
 The FIRM pipeline is made available through a single command line
 command.
 
+## Known issues
+
+Python 3.10 and MacOS X: Multiprocessing issue with shared memory can
+lead to unexpected results.
+If you experience unxepected errors please try Python 3.9
+
 ## Docker image
 
 A Docker image `weiju/isb-firm` with preinstalled FIRM is available on Docker Hub.
 
 
-```docker pull weiju/isb-firm```
+```
+$ docker pull weiju/isb-firm
+$ docker run -i -t weiju/isb-firm /bin/bash
+$ cd home/firm-example
+$ firm exp out
+```
+
+After the run you can compare the results in the out directory with
+the files in the archive firm2-out-20220909.tar.gz
+
+They should be identical.
 
 
 ## Installation
@@ -111,7 +127,7 @@ The FIRM pipeline consists of 3 stages:
 
 ### firm-convertminer tool
 
-This is a tool to conver MINER regulon files in JSON format to
+This is a tool to convert MINER regulon files in JSON format to
 FIRMs expected input format.
 
 ```
@@ -188,3 +204,9 @@ AD_Lung_Beer,31,hsa-miR-29a-3p_hsa-miR-29b-3p_hsa-miR-29c-3p,8mer,MIMAT0000086 M
 AD_Lung_Beer,29,hsa-miR-8071,8mer,MIMAT0030998,hsa-mir-661,0.125,0.0002108273,MIMAT0003324,hsa-mir-100,0.03333333333333333,0.0001221282,
 ...
 ```
+
+You can download the reference result set at
+
+https://baliga.systemsbiology.net/files/firm2-out-20220909.tar.gz
+
+to compare the output.
