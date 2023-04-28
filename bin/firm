@@ -2,7 +2,7 @@
 
 import argparse
 import json
-import os
+import os, sys
 from pkg_resources import Requirement, resource_filename, DistributionNotFound
 import time
 import pickle
@@ -107,6 +107,9 @@ if __name__ == '__main__':
         os.makedirs(args.outdir)
     if not os.path.exists(args.tmpdir):
         os.makedirs(args.tmpdir)
+    elif len(os.listdir(args.tmpdir)):
+        print("TMP directory '%s' is not empty. Please remove, clean up or specify a different one." % args.tmpdir)
+        sys.exit(1)
 
     # File paths that are contained in the distribution now, in the future can be
     # overridden by command line options
